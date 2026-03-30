@@ -37,7 +37,7 @@ function executeTransaction(string $transactionType, mysqli $conn) {
         }
 
         // Matches original: missionId(int), actualStart(string), actualEnd(string), odometerStart(int), odometerEnd(int), status(string)
-        $stmt->bind_param('isssii', $missionId, $actualStart, $actualEnd, $odometerStart, $odometerEnd, $missionStatus);
+        $stmt->bind_param('issiis', $missionId, $actualStart, $actualEnd, $odometerStart, $odometerEnd, $missionStatus);
 
         if ($stmt->execute()) {
             $message = '✅ Mission ' . $missionId . ' updated successfully!';
