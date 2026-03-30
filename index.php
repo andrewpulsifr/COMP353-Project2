@@ -94,7 +94,7 @@ if ($isLoggedIn) {
             }
         }
         
-        // View all tables (matches original project behavior)
+        // View all tables 
         $tablesResult = $conn->query('SHOW TABLES');
         if ($tablesResult) {
             while ($table = $tablesResult->fetch_array()) {

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>COMP333 Project - RENTRUCK Database</title>
+    <title>COMP353 Project - RENTRUCK Database</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>

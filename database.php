@@ -14,8 +14,7 @@ function getDbConnection(): ?mysqli {
     $conn = new mysqli(DB_HOST, $_SESSION['db_user'], $_SESSION['db_password'], DB_NAME);
 
     if ($conn->connect_error) {
-        // In a real app, you'd log this error. For now, we'll just return null.
-        return null;
+        return null; // Should log error in a real application
     }
 
     return $conn;
