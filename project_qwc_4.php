@@ -474,11 +474,13 @@ if ($isLoggedIn) {
             $query = '';
 
             switch($_POST['query_type']) {
+                // Query #1: List of customers that are businesses (Enterprises or Companies)
                 case '1':
                     $query = "SELECT client_id, client_name, client_addr, client_phone, client_type
                     FROM CLIENT WHERE client_type = 'Business' ORDER BY client_name";
                     $title = "Query 1: Business Customers";
                     break;
+                // Query #2: List of reservations whose reservation number is greater than 1.
                 case '2':
                     $query = "SELECT res_id, client_id, reservation_date,
                     CASE WHEN res_status = 'P' THEN 'Pending'
@@ -488,6 +490,7 @@ if ($isLoggedIn) {
                     requested_vehicle_type, expected_duration, appointment_datetime FROM RESERVATION WHERE res_id > 1 ORDER BY res_id";
                     $title = "Query 2: Reservations (res_id > 1)";
                     break;
+                // Query #3: List of drivers and vehicles having participated in at least one mission.
                 case '3':
                     $groupBy = $_POST['query3_group_by'] ?? 'none';
 
@@ -520,6 +523,7 @@ if ($isLoggedIn) {
                         $hideColumns = array();
                     }
                     break;
+                //Query #4: List of missions between February 11, 2026 and February 18, 2026 as well as the drivers and vehicles participating in these missions.
                 case '4':
                     $groupBy = $_POST['query4_group_by'] ?? 'none';
 
@@ -578,6 +582,7 @@ if ($isLoggedIn) {
                         $hideColumns = array();
                     }
                     break;
+                // Query #5: The list of customers who have not paid their invoices.
                 case '5':
                     $query = "SELECT DISTINCT c.client_id, c.client_name, c.client_addr,
                     c.client_phone, c.client_type, i.invoice_id, i.invoice_date,
@@ -590,6 +595,7 @@ if ($isLoggedIn) {
                     ORDER BY c.client_id, i.invoice_id";
                     $title = "Query 5: Customers with Unpaid Invoices";
                     break;
+                // Query #6: List of drivers who have driven 'GMC' brand vehicles.
                 case '6':
                     $query = "SELECT DISTINCT d.driver_id,
                     COALESCE(d.driver_first_name, 'N/A') as driver_first_name,
@@ -599,6 +605,7 @@ if ($isLoggedIn) {
                     ORDER BY d.driver_id";
                     $title = "Query 6: Drivers Who Drove GMC Vehicles";
                     break;
+                // Query #7: Which customers have invoices greater than 1000 $?
                 case '7':
                     $query = "SELECT c.client_id, c.client_name, c.client_addr, c.client_phone, i.invoice_id, i.invoice_date,
                     CONCAT('$', FORMAT(SUM(il.rental_cost), 2)) as total_rental_cost
@@ -608,6 +615,7 @@ if ($isLoggedIn) {
                     HAVING SUM(il.rental_cost) > 1000.00 ORDER BY SUM(il.rental_cost) DESC, c.client_id";
                     $title = "Query 7: Customers with Invoices > $1000";
                     break;
+                // Query #8: List of customers with their number of associated invoices.
                 case '8':
                     $query = "SELECT c.client_id, c.client_name, c.client_addr, c.client_phone, c.client_type,
                     COUNT(i.invoice_id) as invoice_count, CONCAT('$',
@@ -618,6 +626,7 @@ if ($isLoggedIn) {
                     ORDER BY invoice_count DESC, c.client_id";
                     $title = "Query 8: Customer Invoice Summary";
                     break;
+                // Query #9: What are the last names and first names of the drivers who have a mission between the following dates: February 1, 2026 and March 30, 2026 whose mileage (number of kilometers traveled) is more than 7000 km?
                 case '9':
                     $query = "SELECT d.driver_id, COALESCE(d.driver_first_name, 'N/A') as driver_first_name,
                     COALESCE(d.driver_last_name, 'N/A') as driver_last_name,
@@ -683,7 +692,8 @@ if ($isLoggedIn) {
             }
         }
 
-        // Execute transaction
+        // Execute two transactions
+        // Query #10: Write a transaction to update details of a mission, given the mission ID. (We expect the end date to change accordingly).
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['executeTransaction'])) {
             $transactionType = $_POST['transaction_type'] ?? '';
 
@@ -705,7 +715,7 @@ if ($isLoggedIn) {
                     $actualEnd = str_replace('T', ' ', $actualEnd);
 
                     $stmt = $conn->prepare("CALL update_mission_details(?, ?, ?, ?, ?, ?)");
-                    $stmt->bind_param("isssii", $missionId, $actualStart, $actualEnd, $odometerStart, $odometerEnd, $missionStatus);
+                    $stmt->bind_param("issiis", $missionId, $actualStart, $actualEnd, $odometerStart, $odometerEnd, $missionStatus);
 
                     if ($stmt->execute()) {
                         echo "<script>showPanel('resultsPanel');</script>";
@@ -739,6 +749,8 @@ if ($isLoggedIn) {
                     $stmt->close();
                 }
             }
+
+            // Query #11:  Write a transaction to cancel a mission or part of a mission.
             elseif ($transactionType === 'cancel_mission') {
                 $missionId = intval($_POST['cancel_mission_id']);
                 $reason = $_POST['cancellation_reason'];
