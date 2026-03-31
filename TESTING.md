@@ -22,6 +22,15 @@ brew install mysql-client
 
 Then ensure your shell can find it (Homebrew will print instructions).
 
+### macOS note: client/auth-plugin mismatch
+
+If `mysql ... < setup.sql` fails with an authentication-plugin load error (some newer Homebrew MySQL clients can’t load the legacy plugin used on the ENCS server), use a MySQL 8 client instead:
+
+```bash
+brew install mysql@8.0
+"$(brew --prefix mysql@8.0)/bin/mysql" -h qwc353.encs.concordia.ca -u <YOUR_ENCS_USER> -p qwc353_4 < setup.sql
+```
+
 ## 2) Run the PHP smoke test
 
 The smoke test connects using environment variables (it does not use the web login/session):
