@@ -86,3 +86,32 @@ function updateQuery4GroupBy(value) {
     const queryForm = document.getElementById('queryForm');
     if (queryForm) queryForm.submit();
 }
+
+function updateMissionFormState() {
+    const statusEl = document.getElementById('update_status');
+    const completedFields = document.getElementById('update_mission_completed_fields');
+    const startEl = document.getElementById('update_start_datetime');
+    const durationEl = document.getElementById('update_duration');
+    const odoStartEl = document.getElementById('update_odometer_start');
+    const odoEndEl = document.getElementById('update_odometer_end');
+
+    if (!statusEl || !completedFields) return;
+
+    const status = statusEl.value;
+    const isCompleted = status === 'C';
+
+    completedFields.style.display = isCompleted ? '' : 'none';
+
+    const completionInputs = [startEl, durationEl, odoStartEl, odoEndEl].filter(Boolean);
+    completionInputs.forEach((input) => {
+        input.disabled = !isCompleted;
+        input.required = isCompleted;
+        if (!isCompleted) {
+            input.value = '';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateMissionFormState();
+});

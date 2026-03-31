@@ -102,33 +102,35 @@
             </div>
 
             <div class="form-group">
-                <label for="update_start_datetime">Actual Start Date/Time *</label>
-                <input type="datetime-local" id="update_start_datetime" name="actual_start_datetime" required>
-            </div>
-
-            <div class="form-group">
-                <label for="update_duration">Duration (hours) *</label>
-                <input type="number" id="update_duration" name="duration_hours" required min="1">
-            </div>
-
-            <div class="form-group">
-                <label for="update_odometer_start">Odometer Start (km) *</label>
-                <input type="number" id="update_odometer_start" name="odometer_start" required min="0">
-            </div>
-
-            <div class="form-group">
-                <label for="update_odometer_end">Odometer End (km) *</label>
-                <input type="number" id="update_odometer_end" name="odometer_end" required min="0">
-            </div>
-
-            <div class="form-group">
                 <label for="update_status">Mission Status *</label>
-                <select id="update_status" name="mission_status" required style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <select id="update_status" name="mission_status" required style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;" onchange="updateMissionFormState()">
                     <option value="">-- Select Status --</option>
                     <option value="S">S - Scheduled</option>
                     <option value="C">C - Completed</option>
                     <option value="P">P - Pending</option>
                 </select>
+            </div>
+
+            <div id="update_mission_completed_fields">
+                <div class="form-group">
+                    <label for="update_start_datetime">Actual Start Date/Time *</label>
+                    <input type="datetime-local" id="update_start_datetime" name="actual_start_datetime">
+                </div>
+
+                <div class="form-group">
+                    <label for="update_duration">Duration (hours) *</label>
+                    <input type="number" id="update_duration" name="duration_hours" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="update_odometer_start">Odometer Start (km) *</label>
+                    <input type="number" id="update_odometer_start" name="odometer_start" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="update_odometer_end">Odometer End (km) *</label>
+                    <input type="number" id="update_odometer_end" name="odometer_end" min="0">
+                </div>
             </div>
 
             <button type="submit" class="transaction-btn">✅ Update Mission</button>
