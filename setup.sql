@@ -149,59 +149,55 @@ DELIMITER //
 CREATE PROCEDURE update_mission_details(
     IN p_mission_id INT,
     IN p_start_datetime DATETIME,
-   IN p_duration_hours INT,
+    IN p_mission_duration FLOAT,
     IN p_odometer_start INT,
     IN p_odometer_end INT,
     IN p_status CHAR(1)
 )
 BEGIN
-    DECLARE v_end_datetime DATETIME;
-   DECLARE v_duration_days DECIMAL(10,4);
-
    IF p_mission_id IS NULL OR p_mission_id <= 0 THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid mission_id';
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Invalid mission_id';
    END IF;
 
    IF p_start_datetime IS NULL THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'actual_start_datetime is required';
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Start datetime is required';
    END IF;
 
-   IF p_duration_hours IS NULL OR p_duration_hours <= 0 OR p_duration_hours > 120 THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'duration_hours must be between 1 and 120';
+   IF p_mission_duration IS NULL OR p_mission_duration <= 0 OR p_mission_duration > 5 THEN
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Mission duration must be > 0 and <= 5 days';
    END IF;
 
    IF p_odometer_start IS NULL OR p_odometer_end IS NULL THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Odometer values are required';
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Odometer values are required';
    END IF;
+
    IF p_odometer_end < p_odometer_start THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
    END IF;
 
-   IF p_status IS NULL OR p_status <> 'C' THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'update_mission_details must set status to C (Completed)';
-   END IF;
+   START TRANSACTION;
 
-    START TRANSACTION;
-
-    -- Calculate end date
-    SET v_end_datetime = DATE_ADD(p_start_datetime, INTERVAL p_duration_hours HOUR);
-   SET v_duration_days = p_duration_hours / 24.0;
-
-    UPDATE MISSION
-    SET actual_start_datetime = p_start_datetime,
-        actual_end_datetime = v_end_datetime,
-        odometer_start = p_odometer_start,
-        odometer_end = p_odometer_end,
-      mission_status = p_status,
-      duration = v_duration_days
-    WHERE mission_id = p_mission_id;
+   UPDATE MISSION
+   SET actual_start_datetime = p_start_datetime,
+       actual_end_datetime = DATE_ADD(p_start_datetime, INTERVAL p_mission_duration DAY),
+       duration = p_mission_duration,
+       odometer_start = p_odometer_start,
+       odometer_end = p_odometer_end,
+       mission_status = p_status
+   WHERE mission_id = p_mission_id;
 
    IF ROW_COUNT() = 0 THEN
       ROLLBACK;
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Mission not found';
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Mission not found';
    END IF;
 
-    COMMIT;
+   COMMIT;
 END //
 
 CREATE PROCEDURE cancel_mission(
@@ -226,87 +222,96 @@ DELIMITER ;
 
 DELIMITER //
 
+DELIMITER //
+
+DROP TRIGGER IF EXISTS mission_before_insert //
+
 CREATE TRIGGER mission_before_insert
 BEFORE INSERT ON MISSION
 FOR EACH ROW
 BEGIN
    DECLARE v_expected_duration INT;
-   DECLARE v_duration_days DECIMAL(10,4);
 
-   -- Copy expected duration from reservation (project spec: reservation decomposes into missions)
-   SELECT expected_duration INTO v_expected_duration
+   SELECT expected_duration
+   INTO v_expected_duration
    FROM RESERVATION
    WHERE res_id = NEW.res_id;
 
+   IF v_expected_duration IS NULL THEN
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Reservation not found for mission';
+   END IF;
+
+   -- Initialize from reservation on insert
+   SET NEW.duration = v_expected_duration;
+
    IF NEW.mission_status = 'C' THEN
-      IF NEW.actual_start_datetime IS NULL OR NEW.actual_end_datetime IS NULL
-         OR NEW.odometer_start IS NULL OR NEW.odometer_end IS NULL THEN
-         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Completed missions require actual start/end and odometer values';
+      IF NEW.actual_start_datetime IS NULL
+         OR NEW.odometer_start IS NULL
+         OR NEW.odometer_end IS NULL THEN
+         SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'Completed missions require actual start and odometer values';
       END IF;
 
-      IF NEW.actual_end_datetime <= NEW.actual_start_datetime THEN
-         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'actual_end_datetime must be after actual_start_datetime';
+      IF NEW.odometer_end < NEW.odometer_start THEN
+         SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
       END IF;
 
-      SET v_duration_days = TIMESTAMPDIFF(MINUTE, NEW.actual_start_datetime, NEW.actual_end_datetime) / 1440.0;
-      SET NEW.duration = v_duration_days;
+      -- Derive end date automatically in days
+      SET NEW.actual_end_datetime = DATE_ADD(NEW.actual_start_datetime, INTERVAL NEW.duration DAY);
+
    ELSE
-      -- Pending/Scheduled missions must not have actual values yet
-      IF NEW.actual_start_datetime IS NOT NULL OR NEW.actual_end_datetime IS NOT NULL
-         OR NEW.odometer_start IS NOT NULL OR NEW.odometer_end IS NOT NULL THEN
-         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Non-completed missions must not have actual start/end or odometer values';
+      IF NEW.actual_start_datetime IS NOT NULL
+         OR NEW.actual_end_datetime IS NOT NULL
+         OR NEW.odometer_start IS NOT NULL
+         OR NEW.odometer_end IS NOT NULL THEN
+         SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'Non-completed missions must not have actual start/end or odometer values';
       END IF;
-
-      SET NEW.duration = v_expected_duration;
    END IF;
+END//
 
-   IF NEW.duration IS NULL OR NEW.duration <= 0 OR NEW.duration > 5 THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Mission duration must be > 0 and <= 5 days';
-   END IF;
+DELIMITER ;
 
-   IF NEW.odometer_start IS NOT NULL AND NEW.odometer_end IS NOT NULL AND NEW.odometer_end < NEW.odometer_start THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
-   END IF;
-END //
+DELIMITER //
 
 CREATE TRIGGER mission_before_update
 BEFORE UPDATE ON MISSION
 FOR EACH ROW
 BEGIN
-   DECLARE v_expected_duration INT;
-   DECLARE v_duration_days DECIMAL(10,4);
-
-   SELECT expected_duration INTO v_expected_duration
-   FROM RESERVATION
-   WHERE res_id = NEW.res_id;
-
    IF NEW.mission_status = 'C' THEN
-      IF NEW.actual_start_datetime IS NULL OR NEW.actual_end_datetime IS NULL
-         OR NEW.odometer_start IS NULL OR NEW.odometer_end IS NULL THEN
-         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Completed missions require actual start/end and odometer values';
+      IF NEW.actual_start_datetime IS NULL
+         OR NEW.actual_end_datetime IS NULL
+         OR NEW.odometer_start IS NULL
+         OR NEW.odometer_end IS NULL THEN
+         SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'Completed missions require actual start/end and odometer values';
       END IF;
 
       IF NEW.actual_end_datetime <= NEW.actual_start_datetime THEN
-         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'actual_end_datetime must be after actual_start_datetime';
+         SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'actual_end_datetime must be after actual_start_datetime';
       END IF;
-
-      SET v_duration_days = TIMESTAMPDIFF(MINUTE, NEW.actual_start_datetime, NEW.actual_end_datetime) / 1440.0;
-      SET NEW.duration = v_duration_days;
    ELSE
-      IF NEW.actual_start_datetime IS NOT NULL OR NEW.actual_end_datetime IS NOT NULL
-         OR NEW.odometer_start IS NOT NULL OR NEW.odometer_end IS NOT NULL THEN
-         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Non-completed missions must not have actual start/end or odometer values';
+      IF NEW.actual_start_datetime IS NOT NULL
+         OR NEW.actual_end_datetime IS NOT NULL
+         OR NEW.odometer_start IS NOT NULL
+         OR NEW.odometer_end IS NOT NULL THEN
+         SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'Non-completed missions must not have actual start/end or odometer values';
       END IF;
-
-      SET NEW.duration = v_expected_duration;
    END IF;
 
    IF NEW.duration IS NULL OR NEW.duration <= 0 OR NEW.duration > 5 THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Mission duration must be > 0 and <= 5 days';
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Mission duration must be > 0 and <= 5 days';
    END IF;
 
-   IF NEW.odometer_start IS NOT NULL AND NEW.odometer_end IS NOT NULL AND NEW.odometer_end < NEW.odometer_start THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
+   IF NEW.odometer_start IS NOT NULL AND NEW.odometer_end IS NOT NULL
+      AND NEW.odometer_end < NEW.odometer_start THEN
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
    END IF;
 END //
 
@@ -375,18 +380,18 @@ INSERT INTO RESERVATION (res_id, client_id, reservation_date, res_status, reques
 -- Missions in Mar 11-18 range to satisfy Query 4, plus one high-mileage mission for Query 9
 INSERT INTO MISSION (
   mission_id, res_id, driver_id, vehicle_id, rendezvous_location, appointment_datetime,
-   actual_start_datetime, actual_end_datetime, odometer_start, odometer_end, mission_status, duration
+  actual_start_datetime, odometer_start, odometer_end, mission_status
 ) VALUES
-(1, 1, 1, 1, 'Airport', '2026-03-11 08:00:00', NULL, NULL, NULL, NULL, 'P', 1),
-(2, 2, 2, 4, 'Warehouse', '2026-03-12 09:30:00', '2026-03-12 09:40:00', '2026-03-14 18:00:00', 120000, 120450, 'C', 1),
-(3, 3, 3, 11, 'Downtown', '2026-03-13 10:00:00', '2026-03-13 10:10:00', '2026-03-14 17:00:00', 45000, 45200, 'C', 1),
-(4, 4, 4, 6, 'Port', '2026-03-14 07:00:00', '2026-03-14 07:15:00', '2026-03-17 19:00:00', 80000, 80750, 'C', 1),
-(5, 6, 5, 10, 'Industrial', '2026-03-16 09:00:00', '2026-03-16 09:10:00', '2026-03-17 17:30:00', 62000, 62350, 'C', 1),
-(6, 7, 6, 2, 'Airport', '2026-03-17 10:30:00', NULL, NULL, NULL, NULL, 'S', 1),
-(7, 8, 7, 12, 'Distribution', '2026-03-18 07:30:00', NULL, NULL, NULL, NULL, 'S', 1),
-(8, 9, 8, 3, 'Downtown', '2026-03-15 08:00:00', NULL, NULL, NULL, NULL, 'P', 1),
-(9, 10, 9, 7, 'Downtown', '2026-03-16 09:30:00', '2026-03-16 09:45:00', '2026-03-18 18:00:00', 10000, 18050, 'C', 1),
-(10, 2, 10, 5, 'Warehouse', '2026-03-12 13:00:00', '2026-03-12 13:05:00', '2026-03-12 20:00:00', 90000, 90100, 'C', 1);
+(1, 1, 1, 1, 'Airport', '2026-03-11 08:00:00', NULL, NULL, NULL, 'P'),
+(2, 2, 2, 4, 'Warehouse', '2026-03-12 09:30:00', '2026-03-12 09:40:00', 120000, 120450, 'C'),
+(3, 3, 3, 11, 'Downtown', '2026-03-13 10:00:00', '2026-03-13 10:10:00', 45000, 45200, 'C'),
+(4, 4, 4, 6, 'Port', '2026-03-14 07:00:00', '2026-03-14 07:15:00', 80000, 80750, 'C'),
+(5, 6, 5, 10, 'Industrial', '2026-03-16 09:00:00', '2026-03-16 09:10:00', 62000, 62350, 'C'),
+(6, 7, 6, 2, 'Airport', '2026-03-17 10:30:00', NULL, NULL, NULL, 'S'),
+(7, 8, 7, 12, 'Distribution', '2026-03-18 07:30:00', NULL, NULL, NULL, 'S'),
+(8, 9, 8, 3, 'Downtown', '2026-03-15 08:00:00', NULL, NULL, NULL, 'P'),
+(9, 10, 9, 7, 'Downtown', '2026-03-16 09:30:00', '2026-03-16 09:45:00', 10000, 18050, 'C'),
+(10, 2, 10, 5, 'Warehouse', '2026-03-12 13:00:00', '2026-03-12 13:05:00', 90000, 90100, 'C');
 
 -- 10 invoices
 INSERT INTO INVOICE (invoice_id, client_id, invoice_date) VALUES
