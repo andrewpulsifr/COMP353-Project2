@@ -6,7 +6,7 @@ declare(strict_types=1);
 // Connects with environment variables (no web session required).
 //
 // Usage:
-//   DB_USER=... DB_PASSWORD=... php scripts/db_smoke_test.php
+//   DB_USER=... DB_PASSWORD=... php db_smoke_test.php
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
@@ -94,15 +94,19 @@ $minRows = [
 
 // 1) Tables exist
 foreach ($requiredTables as $table) {
-    $stmt = $conn->prepare('SHOW TABLES LIKE ?');
+    // Some MySQL servers do not accept parameterized SHOW statements.
+    // Use information_schema for a portable, fully-parameterized check.
+    $stmt = $conn->prepare(
+        'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? LIMIT 1'
+    );
     if (!$stmt) {
-        fail('Unable to prepare SHOW TABLES: ' . $conn->error);
+        fail('Unable to prepare table check: ' . $conn->error);
     }
-    $stmt->bind_param('s', $table);
+    $stmt->bind_param('ss', $dbName, $table);
     if (!$stmt->execute()) {
         $err = $stmt->error;
         $stmt->close();
-        fail("SHOW TABLES failed for {$table}: {$err}");
+        fail("Table check failed for {$table}: {$err}");
     }
     $res = $stmt->get_result();
     $exists = $res && $res->num_rows > 0;
@@ -193,7 +197,7 @@ foreach ($requiredProcedures as $proc) {
 ok('Stored procedures exist');
 
 // 5) Query smoke tests (1-9) using the app's query definitions
-require_once __DIR__ . '/../queries.php';
+require_once __DIR__ . '/queries.php';
 
 $queriesToRun = [
     ['type' => '1'],

@@ -6,12 +6,12 @@ This repo assumes the remote MySQL host and schema used by the web UI:
 
 ## 1) Apply schema + seed data
 
-WARNING: `sql/setup.sql` **drops and recreates** all project tables in `qwc353_4`.
+WARNING: `setup.sql` **drops and recreates** all project tables in `qwc353_4`.
 
 Run (from repo root):
 
 ```bash
-mysql -h qwc353.encs.concordia.ca -u <YOUR_ENCS_USER> -p qwc353_4 < sql/setup.sql
+mysql -h qwc353.encs.concordia.ca -u <YOUR_ENCS_USER> -p qwc353_4 < setup.sql
 ```
 
 If you don’t have the `mysql` CLI installed on macOS, install it via Homebrew:
@@ -29,13 +29,13 @@ The smoke test connects using environment variables (it does not use the web log
 ```bash
 DB_USER=<YOUR_ENCS_USER> \
 DB_PASSWORD=<YOUR_PASSWORD> \
-php scripts/db_smoke_test.php
+php db_smoke_test.php
 ```
 
 Optional overrides:
 
 ```bash
-DB_HOST=qwc353.encs.concordia.ca DB_NAME=qwc353_4 DB_USER=... DB_PASSWORD=... php scripts/db_smoke_test.php
+DB_HOST=qwc353.encs.concordia.ca DB_NAME=qwc353_4 DB_USER=... DB_PASSWORD=... php db_smoke_test.php
 ```
 
 ### What it checks
@@ -57,4 +57,4 @@ DB_HOST=qwc353.encs.concordia.ca DB_NAME=qwc353_4 DB_USER=... DB_PASSWORD=... ph
 
 ## Notes
 
-- If your team’s report defines stored procedure behavior differently, update `sql/setup.sql` to match that spec (this repo currently implements the simplest behavior that matches the web UI).
+- If report defines stored procedure behavior differently, update `setup.sql` to match that spec. It currently implements the simplest behavior that matches the web UI.
