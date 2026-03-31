@@ -73,50 +73,51 @@ function executeQuery(string $queryType, mysqli $conn) {
                 $query = "SELECT DATE(m.appointment_datetime) as appointment_date,\n"
                     . "COUNT(DISTINCT m.mission_id) as mission_count\n"
                     . "FROM MISSION m\n"
-                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-02-11' AND '2026-02-18'\n"
+                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-03-11' AND '2026-03-18'\n"
                     . "GROUP BY DATE(m.appointment_datetime)\n"
                     . "ORDER BY appointment_date";
-                $title = 'Query 4: Missions Between Feb 11-18, 2026 (Grouped by Date)';
+                $title = 'Query 4: Missions Between Mar 11-18, 2026 (Grouped by Date)';
             } elseif ($groupBy === 'driver') {
                 $query = "SELECT d.driver_id, COALESCE(d.driver_first_name, 'N/A') as driver_first_name,\n"
                     . "COALESCE(d.driver_last_name, 'N/A') as driver_last_name,\n"
                     . "COUNT(DISTINCT m.mission_id) as mission_count\n"
                     . "FROM MISSION m JOIN DRIVER d ON m.driver_id = d.driver_id\n"
-                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-02-11' AND '2026-02-18'\n"
+                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-03-11' AND '2026-03-18'\n"
                     . "GROUP BY d.driver_id, d.driver_first_name, d.driver_last_name\n"
                     . "ORDER BY d.driver_id";
-                $title = 'Query 4: Missions Between Feb 11-18, 2026 (Grouped by Driver)';
+                $title = 'Query 4: Missions Between Mar 11-18, 2026 (Grouped by Driver)';
             } elseif ($groupBy === 'location') {
                 $query = "SELECT m.rendezvous_location,\n"
                     . "COUNT(DISTINCT m.mission_id) as mission_count\n"
                     . "FROM MISSION m\n"
-                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-02-11' AND '2026-02-18'\n"
+                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-03-11' AND '2026-03-18'\n"
                     . "GROUP BY m.rendezvous_location\n"
                     . "ORDER BY m.rendezvous_location";
-                $title = 'Query 4: Missions Between Feb 11-18, 2026 (Grouped by Location)';
+                $title = 'Query 4: Missions Between Mar 11-18, 2026 (Grouped by Location)';
             } elseif ($groupBy === 'vehicle') {
                 $query = "SELECT v.vehicle_id, v.vehicle_type, v.vehicle_brand,\n"
                     . "COUNT(DISTINCT m.mission_id) as mission_count\n"
                     . "FROM MISSION m JOIN VEHICLE v ON m.vehicle_id = v.vehicle_id\n"
-                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-02-11' AND '2026-02-18'\n"
+                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-03-11' AND '2026-03-18'\n"
                     . "GROUP BY v.vehicle_id, v.vehicle_type, v.vehicle_brand\n"
                     . "ORDER BY v.vehicle_id";
-                $title = 'Query 4: Missions Between Feb 11-18, 2026 (Grouped by Vehicle)';
+                $title = 'Query 4: Missions Between Mar 11-18, 2026 (Grouped by Vehicle)';
             } else {
                 $query = "SELECT m.mission_id, DATE(m.appointment_datetime) as appointment_date, TIME(m.appointment_datetime) as appointment_time,\n"
-                    . "CASE WHEN m.mission_status = 'S' THEN 'Started'\n"
+                    . "CASE WHEN m.mission_status = 'S' THEN 'Scheduled'\n"
                     . "     WHEN m.mission_status = 'C' THEN 'Completed'\n"
                     . "     WHEN m.mission_status = 'P' THEN 'Pending'\n"
                     . "END as mission_status,\n"
                     . "d.driver_id, COALESCE(d.driver_first_name, 'N/A') as driver_first_name,\n"
                     . "COALESCE(d.driver_last_name, 'N/A') as driver_last_name,\n"
                     . "d.driver_licence_type, v.vehicle_id, v.vehicle_type,\n"
-                    . "v.vehicle_brand, m.rendezvous_location, m.expected_duration\n"
+                    . "v.vehicle_brand, m.rendezvous_location, r.expected_duration\n"
                     . "FROM MISSION m JOIN DRIVER d ON m.driver_id = d.driver_id\n"
                     . "JOIN VEHICLE v ON m.vehicle_id = v.vehicle_id\n"
-                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-02-11' AND '2026-02-18'\n"
+                    . "JOIN RESERVATION r ON r.res_id = m.res_id\n"
+                    . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-03-11' AND '2026-03-18'\n"
                     . "ORDER BY m.mission_id";
-                $title = 'Query 4: Missions Between Feb 11-18, 2026';
+                $title = 'Query 4: Missions Between Mar 11-18, 2026';
             }
             break;
 
@@ -169,7 +170,7 @@ function executeQuery(string $queryType, mysqli $conn) {
                 . "COALESCE(d.driver_last_name, 'N/A') as driver_last_name,\n"
                 . "MAX((m.odometer_end - m.odometer_start)) as max_kilometers_traveled\n"
                 . "FROM DRIVER d JOIN MISSION m ON d.driver_id = m.driver_id\n"
-                . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-02-01' AND '2026-03-30'\n"
+                . "WHERE DATE(m.appointment_datetime) BETWEEN '2026-02-01' AND '2026-03-31'\n"
                 . "AND (m.odometer_end - m.odometer_start) > 7000\n"
                 . "GROUP BY d.driver_id, d.driver_first_name, d.driver_last_name\n"
                 . "ORDER BY max_kilometers_traveled DESC";
