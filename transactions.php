@@ -8,12 +8,12 @@ function executeTransaction(string $transactionType, mysqli $conn) {
     if ($transactionType === 'update_mission') {
         $missionId = isset($_POST['mission_id']) ? intval($_POST['mission_id']) : 0;
         $actualStart = $_POST['actual_start_datetime'] ?? '';
-        $actualEnd = $_POST['actual_end_datetime'] ?? '';
+        $duration = isset($_POST['duration_hours']) ? intval($_POST['duration_hours']) : 0;
         $odometerStart = isset($_POST['odometer_start']) ? intval($_POST['odometer_start']) : 0;
         $odometerEnd = isset($_POST['odometer_end']) ? intval($_POST['odometer_end']) : 0;
         $missionStatus = $_POST['mission_status'] ?? '';
 
-        if (empty($missionId) || empty($actualStart) || empty($actualEnd) || empty($odometerStart) || empty($odometerEnd) || empty($missionStatus)) {
+        if (empty($missionId) || empty($actualStart) || empty($duration) || empty($odometerStart) || empty($odometerEnd) || empty($missionStatus)) {
             return [
                 'message' => 'All fields are required for Update Mission transaction.',
                 'isError' => true,
@@ -37,7 +37,7 @@ function executeTransaction(string $transactionType, mysqli $conn) {
         }
 
         // Matches original: missionId(int), actualStart(string), actualEnd(string), odometerStart(int), odometerEnd(int), status(string)
-        $stmt->bind_param('issiis', $missionId, $actualStart, $actualEnd, $odometerStart, $odometerEnd, $missionStatus);
+        $stmt->bind_param('issiis', $missionId, $actualStart, $duration, $odometerStart, $odometerEnd, $missionStatus);
 
         if ($stmt->execute()) {
             $message = '✅ Mission ' . $missionId . ' updated successfully!';

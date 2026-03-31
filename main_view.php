@@ -107,8 +107,8 @@
             </div>
 
             <div class="form-group">
-                <label for="update_end_datetime">Actual End Date/Time *</label>
-                <input type="datetime-local" id="update_end_datetime" name="actual_end_datetime" required>
+                <label for="update_duration">Duration (hours) *</label>
+                <input type="number" id="update_duration" name="duration_hours" required min="1">
             </div>
 
             <div class="form-group">

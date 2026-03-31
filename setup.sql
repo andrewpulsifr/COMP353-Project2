@@ -145,20 +145,29 @@ DELIMITER //
 
 CREATE PROCEDURE update_mission_details(
     IN p_mission_id INT,
-    IN p_actual_start DATETIME,
-    IN p_actual_end DATETIME,
+    IN p_start_datetime DATETIME,
+    IN p_duration_hours INT,
     IN p_odometer_start INT,
     IN p_odometer_end INT,
     IN p_status CHAR(1)
 )
 BEGIN
+    DECLARE v_end_datetime DATETIME;
+
+    START TRANSACTION;
+
+    -- Calculate end date
+    SET v_end_datetime = DATE_ADD(p_start_datetime, INTERVAL p_duration_hours HOUR);
+
     UPDATE MISSION
-    SET actual_start_datetime = p_actual_start,
-        actual_end_datetime = p_actual_end,
+    SET actual_start_datetime = p_start_datetime,
+        actual_end_datetime = v_end_datetime,
         odometer_start = p_odometer_start,
         odometer_end = p_odometer_end,
         mission_status = p_status
     WHERE mission_id = p_mission_id;
+
+    COMMIT;
 END //
 
 CREATE PROCEDURE cancel_mission(
