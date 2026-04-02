@@ -3,6 +3,13 @@
  * Purpose: Client-side UI helpers for showing/hiding panels and submitting query forms.
  */
 
+/**
+ * Shows a UI panel by id.
+ * For results, keeps query/results visible together
+ * Otherwise hides all and shows only the requested panel.
+ *
+ * @param {string} panelId The id of the panel to show.
+ */
 function showPanel(panelId) {
     // If showing results, just show query and results panels without hiding others
     if (panelId === 'resultsPanel') {
@@ -34,6 +41,9 @@ function showPanel(panelId) {
     if (panel) panel.classList.add('show');
 }
 
+/**
+ * Hides all major panels and clears any rendered query result HTML.
+ */
 function hideAll() {
     const idsToHide = [
         'queryPanel',
@@ -53,6 +63,12 @@ function hideAll() {
     if (resultContent) resultContent.innerHTML = '';
 }
 
+/**
+ * Sets the selected query type and submits the query form.
+ * Resets group-by controls unless query 3 or 4 is selected.
+ *
+ * @param {string} queryType Query identifier (1-9).
+ */
 function executeQuery(queryType) {
     const selectedQuery = document.getElementById('selectedQuery');
     if (selectedQuery) selectedQuery.value = queryType;
@@ -74,6 +90,11 @@ function executeQuery(queryType) {
     if (queryForm) queryForm.submit();
 }
 
+/**
+ * Updates Query 3 grouping mode and submits the query form.
+ *
+ * @param {string} value Group-by value for query 3.
+ */
 function updateQuery3GroupBy(value) {
     const query3GroupBy = document.getElementById('query3GroupBy');
     if (query3GroupBy) query3GroupBy.value = value;
@@ -83,6 +104,11 @@ function updateQuery3GroupBy(value) {
     if (queryForm) queryForm.submit();
 }
 
+/**
+ * Updates Query 4 grouping mode and submits the query form.
+ *
+ * @param {string} value Group-by value for query 4.
+ */
 function updateQuery4GroupBy(value) {
     const query4GroupBy = document.getElementById('query4GroupBy');
     if (query4GroupBy) query4GroupBy.value = value;
@@ -92,4 +118,4 @@ function updateQuery4GroupBy(value) {
     if (queryForm) queryForm.submit();
 }
 
-// Transaction 10 is completion-only; no mission-status-driven UI logic.
+// Transaction 10 is completion-only no mission-status-driven UI logic.
