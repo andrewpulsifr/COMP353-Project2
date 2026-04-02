@@ -98,7 +98,7 @@ CREATE TABLE MISSION (
    FOREIGN KEY (res_id) REFERENCES RESERVATION(res_id) ON DELETE CASCADE ON UPDATE CASCADE,
    FOREIGN KEY (driver_id) REFERENCES DRIVER(driver_id) ON DELETE RESTRICT ON UPDATE CASCADE,
    FOREIGN KEY (vehicle_id) REFERENCES VEHICLE(vehicle_id) ON DELETE RESTRICT ON UPDATE CASCADE,
-   CONSTRAINT chk_mission_status CHECK (mission_status IN ('S', 'C', 'P')),
+   CONSTRAINT chk_mission_status CHECK (mission_status IN ('S', 'C')),
    CONSTRAINT chk_mission_duration CHECK (duration > 0 AND duration <= 5),
    CONSTRAINT chk_odometer CHECK (odometer_start IS NULL OR odometer_end IS NULL OR odometer_end >= odometer_start)
 ) ENGINE=InnoDB;
@@ -149,7 +149,7 @@ DELIMITER //
 CREATE PROCEDURE update_mission_details(
     IN p_mission_id INT,
     IN p_start_datetime DATETIME,
-    IN p_mission_duration FLOAT,
+   IN p_mission_duration INT,
     IN p_odometer_start INT,
     IN p_odometer_end INT,
     IN p_status CHAR(1)
@@ -165,7 +165,7 @@ BEGIN
       SET MESSAGE_TEXT = 'Start datetime is required';
    END IF;
 
-   IF p_mission_duration IS NULL OR p_mission_duration <= 0 OR p_mission_duration > 5 THEN
+   IF p_mission_duration IS NULL OR p_mission_duration < 1 OR p_mission_duration > 5 THEN
       SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'Mission duration must be > 0 and <= 5 days';
    END IF;
@@ -382,14 +382,14 @@ INSERT INTO MISSION (
   mission_id, res_id, driver_id, vehicle_id, rendezvous_location, appointment_datetime,
   actual_start_datetime, odometer_start, odometer_end, mission_status
 ) VALUES
-(1, 1, 1, 1, 'Airport', '2026-03-11 08:00:00', NULL, NULL, NULL, 'P'),
+(1, 1, 1, 1, 'Airport', '2026-03-11 08:00:00', NULL, NULL, NULL, 'S'),
 (2, 2, 2, 4, 'Warehouse', '2026-03-12 09:30:00', '2026-03-12 09:40:00', 120000, 120450, 'C'),
 (3, 3, 3, 11, 'Downtown', '2026-03-13 10:00:00', '2026-03-13 10:10:00', 45000, 45200, 'C'),
 (4, 4, 4, 6, 'Port', '2026-03-14 07:00:00', '2026-03-14 07:15:00', 80000, 80750, 'C'),
 (5, 6, 5, 10, 'Industrial', '2026-03-16 09:00:00', '2026-03-16 09:10:00', 62000, 62350, 'C'),
 (6, 7, 6, 2, 'Airport', '2026-03-17 10:30:00', NULL, NULL, NULL, 'S'),
 (7, 8, 7, 12, 'Distribution', '2026-03-18 07:30:00', NULL, NULL, NULL, 'S'),
-(8, 9, 8, 3, 'Downtown', '2026-03-15 08:00:00', NULL, NULL, NULL, 'P'),
+(8, 9, 8, 3, 'Downtown', '2026-03-15 08:00:00', NULL, NULL, NULL, 'S'),
 (9, 10, 9, 7, 'Downtown', '2026-03-16 09:30:00', '2026-03-16 09:45:00', 10000, 18050, 'C'),
 (10, 2, 10, 5, 'Warehouse', '2026-03-12 13:00:00', '2026-03-12 13:05:00', 90000, 90100, 'C');
 

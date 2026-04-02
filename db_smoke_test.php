@@ -229,12 +229,12 @@ if (!$stmt) {
 
 $missionId = 1;
 $start = '2026-04-01 10:00:00';
-$durationHours = 8;
+$durationDays = 1;
 $odoStart = 12345;
 $odoEnd = 12500;
 $status = 'C';
 
-$stmt->bind_param('isiiis', $missionId, $start, $durationHours, $odoStart, $odoEnd, $status);
+$stmt->bind_param('isiiis', $missionId, $start, $durationDays, $odoStart, $odoEnd, $status);
 if (!$stmt->execute()) {
     $err = $stmt->error;
     $stmt->close();
@@ -281,7 +281,7 @@ if (!$insert) {
 }
 $loc = 'Airport';
 $appt = '2026-04-02 09:00:00';
-$st = 'P';
+$st = 'S';
 $insert->bind_param('isss', $cancelId, $loc, $appt, $st);
 if (!$insert->execute()) {
     $err = $insert->error;

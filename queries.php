@@ -29,6 +29,8 @@ function executeQuery(string $queryType, mysqli $conn) {
                 . "     WHEN res_status = 'X' THEN 'Cancelled'\n"
                 . "END as res_status,\n"
                 . "requested_vehicle_type, expected_duration, appointment_datetime\n"
+                . "requested_vehicle_type, expected_duration, appointment_datetime,\n"
+                . "DATE_ADD(appointment_datetime, INTERVAL expected_duration DAY) AS expected_end_datetime\n"
                 . "FROM RESERVATION WHERE res_id > 1 ORDER BY res_id";
             $title = 'Query 2: Reservations (res_id > 1)';
             break;
@@ -106,7 +108,6 @@ function executeQuery(string $queryType, mysqli $conn) {
                 $query = "SELECT m.mission_id, DATE(m.appointment_datetime) as appointment_date, TIME(m.appointment_datetime) as appointment_time,\n"
                     . "CASE WHEN m.mission_status = 'S' THEN 'Scheduled'\n"
                     . "     WHEN m.mission_status = 'C' THEN 'Completed'\n"
-                    . "     WHEN m.mission_status = 'P' THEN 'Pending'\n"
                     . "END as mission_status,\n"
                     . "d.driver_id, COALESCE(d.driver_first_name, 'N/A') as driver_first_name,\n"
                     . "COALESCE(d.driver_last_name, 'N/A') as driver_last_name,\n"

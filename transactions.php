@@ -18,13 +18,13 @@ function executeTransaction(string $transactionType, mysqli $conn) {
         }
 
         $actualStart = $_POST['actual_start_datetime'] ?? '';
-        $duration = isset($_POST['duration_hours']) ? intval($_POST['duration_hours']) : 0;
+        $durationDays = isset($_POST['duration_days']) ? intval($_POST['duration_days']) : 0;
         $odometerStart = isset($_POST['odometer_start']) ? intval($_POST['odometer_start']) : 0;
         $odometerEnd = isset($_POST['odometer_end']) ? intval($_POST['odometer_end']) : 0;
 
-        if (empty($actualStart) || empty($duration) || empty($odometerStart) || empty($odometerEnd)) {
+        if (empty($actualStart) || empty($durationDays) || empty($odometerStart) || empty($odometerEnd)) {
             return [
-                'message' => 'Actual start, duration (hours), and odometer values are required to complete a mission.',
+                'message' => 'Actual start, duration (days), and odometer values are required to complete a mission.',
                 'isError' => true,
                 'detailsTitle' => '',
                 'detailsRows' => [],
@@ -46,8 +46,8 @@ function executeTransaction(string $transactionType, mysqli $conn) {
             ];
         }
 
-        // (mission_id INT, start_datetime DATETIME, duration_hours INT, odometer_start INT, odometer_end INT, status CHAR(1))
-        $stmt->bind_param('isiiis', $missionId, $actualStart, $duration, $odometerStart, $odometerEnd, $missionStatus);
+        // (mission_id INT, start_datetime DATETIME, mission_duration_days INT, odometer_start INT, odometer_end INT, status CHAR(1))
+        $stmt->bind_param('isiiis', $missionId, $actualStart, $durationDays, $odometerStart, $odometerEnd, $missionStatus);
 
         if (!$stmt->execute()) {
             $err = $stmt->error;

@@ -107,8 +107,8 @@
             </div>
 
             <div class="form-group">
-                <label for="update_duration">Duration (hours) *</label>
-                <input type="number" id="update_duration" name="duration_hours" min="1" required>
+                <label for="update_duration">Duration (days) *</label>
+                <input type="number" id="update_duration" name="duration_days" min="1" max="5" step="1" required>
             </div>
 
             <div class="form-group">
