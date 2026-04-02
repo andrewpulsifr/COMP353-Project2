@@ -19,9 +19,6 @@ DROP TABLE IF EXISTS DRIVER;
 DROP TABLE IF EXISTS VEHICLE_RATE;
 DROP TABLE IF EXISTS CLIENT;
 
-DROP TRIGGER IF EXISTS mission_before_insert;
-DROP TRIGGER IF EXISTS mission_before_update;
-
 DROP PROCEDURE IF EXISTS update_mission_details;
 DROP PROCEDURE IF EXISTS cancel_mission;
 
@@ -221,107 +218,6 @@ END //
 DELIMITER ;
 
 -- =====================================================
--- TRIGGERS (DB-enforced constraints + duration behavior)
--- =====================================================
-
-DELIMITER //
-
-DELIMITER //
-
-DROP TRIGGER IF EXISTS mission_before_insert //
-
-CREATE TRIGGER mission_before_insert
-BEFORE INSERT ON MISSION
-FOR EACH ROW
-BEGIN
-   DECLARE v_expected_duration INT;
-
-   SELECT expected_duration
-   INTO v_expected_duration
-   FROM RESERVATION
-   WHERE res_id = NEW.res_id;
-
-   IF v_expected_duration IS NULL THEN
-      SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Reservation not found for mission';
-   END IF;
-
-   -- Initialize from reservation on insert
-   SET NEW.duration = v_expected_duration;
-
-   IF NEW.mission_status = 'C' THEN
-      IF NEW.actual_start_datetime IS NULL
-         OR NEW.odometer_start IS NULL
-         OR NEW.odometer_end IS NULL THEN
-         SIGNAL SQLSTATE '45000'
-         SET MESSAGE_TEXT = 'Completed missions require actual start and odometer values';
-      END IF;
-
-      IF NEW.odometer_end < NEW.odometer_start THEN
-         SIGNAL SQLSTATE '45000'
-         SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
-      END IF;
-
-      -- Derive end date automatically in days
-      SET NEW.actual_end_datetime = DATE_ADD(NEW.actual_start_datetime, INTERVAL NEW.duration DAY);
-
-   ELSE
-      IF NEW.actual_start_datetime IS NOT NULL
-         OR NEW.actual_end_datetime IS NOT NULL
-         OR NEW.odometer_start IS NOT NULL
-         OR NEW.odometer_end IS NOT NULL THEN
-         SIGNAL SQLSTATE '45000'
-         SET MESSAGE_TEXT = 'Non-completed missions must not have actual start/end or odometer values';
-      END IF;
-   END IF;
-END//
-
-DELIMITER ;
-
-DELIMITER //
-
-CREATE TRIGGER mission_before_update
-BEFORE UPDATE ON MISSION
-FOR EACH ROW
-BEGIN
-   IF NEW.mission_status = 'C' THEN
-      IF NEW.actual_start_datetime IS NULL
-         OR NEW.actual_end_datetime IS NULL
-         OR NEW.odometer_start IS NULL
-         OR NEW.odometer_end IS NULL THEN
-         SIGNAL SQLSTATE '45000'
-         SET MESSAGE_TEXT = 'Completed missions require actual start/end and odometer values';
-      END IF;
-
-      IF NEW.actual_end_datetime <= NEW.actual_start_datetime THEN
-         SIGNAL SQLSTATE '45000'
-         SET MESSAGE_TEXT = 'actual_end_datetime must be after actual_start_datetime';
-      END IF;
-   ELSE
-      IF NEW.actual_start_datetime IS NOT NULL
-         OR NEW.actual_end_datetime IS NOT NULL
-         OR NEW.odometer_start IS NOT NULL
-         OR NEW.odometer_end IS NOT NULL THEN
-         SIGNAL SQLSTATE '45000'
-         SET MESSAGE_TEXT = 'Non-completed missions must not have actual start/end or odometer values';
-      END IF;
-   END IF;
-
-   IF NEW.duration IS NULL OR NEW.duration <= 0 OR NEW.duration > 5 THEN
-      SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Mission duration must be > 0 and <= 5 days';
-   END IF;
-
-   IF NEW.odometer_start IS NOT NULL AND NEW.odometer_end IS NOT NULL
-      AND NEW.odometer_end < NEW.odometer_start THEN
-      SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'odometer_end must be >= odometer_start';
-   END IF;
-END //
-
-DELIMITER ;
-
--- =====================================================
 -- SEED DATA
 -- =====================================================
 
@@ -384,18 +280,18 @@ INSERT INTO RESERVATION (res_id, client_id, reservation_date, res_status, reques
 -- Missions in Mar 11-18 range to satisfy Query 4, plus one high-mileage mission for Query 9
 INSERT INTO MISSION (
   mission_id, res_id, driver_id, vehicle_id, rendezvous_location, appointment_datetime,
-  actual_start_datetime, odometer_start, odometer_end, mission_status
+   duration, actual_start_datetime, actual_end_datetime, odometer_start, odometer_end, mission_status
 ) VALUES
-(1, 1, 1, 1, 'Airport', '2026-03-11 08:00:00', NULL, NULL, NULL, 'S'),
-(2, 2, 2, 4, 'Warehouse', '2026-03-12 09:30:00', '2026-03-12 09:40:00', 120000, 120450, 'C'),
-(3, 3, 3, 11, 'Downtown', '2026-03-13 10:00:00', '2026-03-13 10:10:00', 45000, 45200, 'C'),
-(4, 4, 4, 6, 'Port', '2026-03-14 07:00:00', '2026-03-14 07:15:00', 80000, 80750, 'C'),
-(5, 6, 5, 10, 'Industrial', '2026-03-16 09:00:00', '2026-03-16 09:10:00', 62000, 62350, 'C'),
-(6, 7, 6, 2, 'Airport', '2026-03-17 10:30:00', NULL, NULL, NULL, 'S'),
-(7, 8, 7, 12, 'Distribution', '2026-03-18 07:30:00', NULL, NULL, NULL, 'S'),
-(8, 9, 8, 3, 'Downtown', '2026-03-15 08:00:00', NULL, NULL, NULL, 'S'),
-(9, 10, 9, 7, 'Downtown', '2026-03-16 09:30:00', '2026-03-16 09:45:00', 10000, 18050, 'C'),
-(10, 2, 10, 5, 'Warehouse', '2026-03-12 13:00:00', '2026-03-12 13:05:00', 90000, 90100, 'C');
+(1, 1, 1, 1, 'Airport', '2026-03-11 08:00:00', 2, NULL, NULL, NULL, NULL, 'S'),
+(2, 2, 2, 4, 'Warehouse', '2026-03-12 09:30:00', 3, '2026-03-12 09:40:00', '2026-03-15 09:40:00', 120000, 120450, 'C'),
+(3, 3, 3, 11, 'Downtown', '2026-03-13 10:00:00', 2, '2026-03-13 10:10:00', '2026-03-15 10:10:00', 45000, 45200, 'C'),
+(4, 4, 4, 6, 'Port', '2026-03-14 07:00:00', 4, '2026-03-14 07:15:00', '2026-03-18 07:15:00', 80000, 80750, 'C'),
+(5, 6, 5, 10, 'Industrial', '2026-03-16 09:00:00', 2, '2026-03-16 09:10:00', '2026-03-18 09:10:00', 62000, 62350, 'C'),
+(6, 7, 6, 2, 'Airport', '2026-03-17 10:30:00', 3, NULL, NULL, NULL, NULL, 'S'),
+(7, 8, 7, 12, 'Distribution', '2026-03-18 07:30:00', 4, NULL, NULL, NULL, NULL, 'S'),
+(8, 9, 8, 3, 'Downtown', '2026-03-15 08:00:00', 2, NULL, NULL, NULL, NULL, 'S'),
+(9, 10, 9, 7, 'Downtown', '2026-03-16 09:30:00', 3, '2026-03-16 09:45:00', '2026-03-19 09:45:00', 10000, 18050, 'C'),
+(10, 2, 10, 5, 'Warehouse', '2026-03-12 13:00:00', 3, '2026-03-12 13:05:00', '2026-03-15 13:05:00', 90000, 90100, 'C');
 
 -- 10 invoices
 INSERT INTO INVOICE (invoice_id, client_id, invoice_date) VALUES

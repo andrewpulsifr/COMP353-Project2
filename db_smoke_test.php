@@ -27,6 +27,100 @@ function ok(string $message): void {
     fwrite(STDOUT, "OK: {$message}\n");
 }
 
+function ensure(bool $condition, string $message): void {
+    if (!$condition) {
+        fail($message);
+    }
+}
+
+function moneyToFloat(string $value): float {
+    $normalized = str_replace([',', '$'], '', $value);
+    return (float)$normalized;
+}
+
+function validateQueryRequirements(string $type, array $rows, array $post): void {
+    if ($type === '1') {
+        ensure(count($rows) > 0, 'Query 1 returned no rows.');
+        foreach ($rows as $row) {
+            ensure(($row['client_type'] ?? '') === 'Business', 'Query 1 returned non-business client.');
+        }
+        return;
+    }
+
+    if ($type === '2') {
+        ensure(count($rows) > 0, 'Query 2 returned no rows.');
+        foreach ($rows as $row) {
+            ensure(((int)($row['res_id'] ?? 0)) > 1, 'Query 2 returned reservation with res_id <= 1.');
+        }
+        return;
+    }
+
+    if ($type === '3') {
+        $groupBy = $post['query3_group_by'] ?? 'none';
+        ensure(count($rows) > 0, 'Query 3 returned no rows.');
+        if ($groupBy === 'none') {
+            foreach ($rows as $row) {
+                ensure(isset($row['driver_id']) && isset($row['vehicle_id']), 'Query 3 (none) missing driver/vehicle linkage.');
+            }
+        }
+        return;
+    }
+
+    if ($type === '4') {
+        $groupBy = $post['query4_group_by'] ?? 'none';
+        ensure(count($rows) > 0, 'Query 4 returned no rows.');
+        if ($groupBy === 'none') {
+            foreach ($rows as $row) {
+                $date = $row['appointment_date'] ?? '';
+                ensure($date >= '2026-03-11' && $date <= '2026-03-18', 'Query 4 returned mission outside Mar 11-18 range.');
+                $status = $row['mission_status'] ?? '';
+                ensure(in_array($status, ['Scheduled', 'Completed'], true), 'Query 4 returned unexpected mission status label.');
+            }
+        }
+        return;
+    }
+
+    if ($type === '5') {
+        ensure(count($rows) > 0, 'Query 5 returned no rows.');
+        foreach ($rows as $row) {
+            ensure(($row['pay_status'] ?? '') === 'Pending', 'Query 5 returned a paid invoice row.');
+        }
+        return;
+    }
+
+    if ($type === '6') {
+        ensure(count($rows) > 0, 'Query 6 returned no rows.');
+        foreach ($rows as $row) {
+            ensure(($row['vehicle_brand'] ?? '') === 'GMC', 'Query 6 returned non-GMC vehicle.');
+        }
+        return;
+    }
+
+    if ($type === '7') {
+        ensure(count($rows) > 0, 'Query 7 returned no rows.');
+        foreach ($rows as $row) {
+            $total = moneyToFloat((string)($row['total_rental_cost'] ?? '0'));
+            ensure($total > 1000.0, 'Query 7 returned invoice total <= 1000.');
+        }
+        return;
+    }
+
+    if ($type === '8') {
+        ensure(count($rows) > 0, 'Query 8 returned no rows.');
+        foreach ($rows as $row) {
+            ensure(((int)($row['invoice_count'] ?? -1)) >= 0, 'Query 8 returned invalid invoice_count.');
+        }
+        return;
+    }
+
+    if ($type === '9') {
+        ensure(count($rows) > 0, 'Query 9 returned no rows.');
+        foreach ($rows as $row) {
+            ensure(((int)($row['max_kilometers_traveled'] ?? 0)) > 7000, 'Query 9 returned mileage <= 7000.');
+        }
+    }
+}
+
 function clearAllResults(mysqli $conn): void {
     while ($conn->more_results()) {
         $conn->next_result();
@@ -219,6 +313,8 @@ foreach ($queriesToRun as $q) {
     }
     $rows = $payload['rows'] ?? [];
     ok('Query ' . $q['type'] . ' executed (rows=' . count($rows) . ')');
+    validateQueryRequirements($q['type'], $rows, $_POST);
+    ok('Query ' . $q['type'] . ' requirement checks passed');
 }
 $_POST = $origPost;
 
@@ -227,7 +323,30 @@ if (!$stmt) {
     fail('Unable to prepare update_mission_details call: ' . $conn->error);
 }
 
-$missionId = 1;
+// Pick a real mission from current DB state (prefer Scheduled).
+$missionId = 0;
+$missionPick = $conn->query("SELECT mission_id FROM MISSION WHERE mission_status = 'S' ORDER BY mission_id LIMIT 1");
+if ($missionPick && $missionPick->num_rows > 0) {
+    $picked = $missionPick->fetch_assoc();
+    $missionId = (int)($picked['mission_id'] ?? 0);
+    $missionPick->free();
+} else {
+    if ($missionPick) {
+        $missionPick->free();
+    }
+    $missionPickAny = $conn->query('SELECT mission_id FROM MISSION ORDER BY mission_id LIMIT 1');
+    if ($missionPickAny && $missionPickAny->num_rows > 0) {
+        $pickedAny = $missionPickAny->fetch_assoc();
+        $missionId = (int)($pickedAny['mission_id'] ?? 0);
+        $missionPickAny->free();
+    } else {
+        if ($missionPickAny) {
+            $missionPickAny->free();
+        }
+        fail('No mission available for update_mission_details smoke check');
+    }
+}
+
 $start = '2026-04-01 10:00:00';
 $durationDays = 1;
 $odoStart = 12345;
@@ -244,7 +363,7 @@ if (!$stmt->execute()) {
 $stmt->close();
 clearAllResults($conn);
 
-$verify = $conn->query('SELECT actual_start_datetime, actual_end_datetime, odometer_start, odometer_end, mission_status, duration FROM MISSION WHERE mission_id = 1');
+$verify = $conn->query('SELECT actual_start_datetime, actual_end_datetime, odometer_start, odometer_end, mission_status, duration FROM MISSION WHERE mission_id = ' . (int)$missionId);
 if (!$verify) {
     fail('Unable to verify mission update: ' . $conn->error);
 }
@@ -252,18 +371,43 @@ $updated = $verify->fetch_assoc();
 $verify->free();
 
 if (!$updated) {
-    fail('Mission 1 not found for update verification');
+    fail('Selected mission not found for update verification');
 }
 if (($updated['mission_status'] ?? '') !== 'C') {
-    fail('Mission 1 status not updated as expected');
+    fail('Selected mission status not updated as expected');
 }
 if (($updated['actual_start_datetime'] ?? null) === null || ($updated['actual_end_datetime'] ?? null) === null) {
-    fail('Mission 1 actual timestamps not updated as expected');
+    fail('Selected mission actual timestamps not updated as expected');
 }
 if (!isset($updated['duration']) || (float)$updated['duration'] <= 0) {
-    fail('Mission 1 duration was not updated as expected');
+    fail('Selected mission duration was not updated as expected');
+}
+
+$startTs = strtotime((string)$updated['actual_start_datetime']);
+$endTs = strtotime((string)$updated['actual_end_datetime']);
+if ($startTs === false || $endTs === false) {
+    fail('Unable to parse mission timestamps during update verification');
+}
+$expectedSeconds = $durationDays * 24 * 60 * 60;
+if (($endTs - $startTs) !== $expectedSeconds) {
+    fail('Selected mission end datetime did not change according to duration in days');
 }
 ok('update_mission_details smoke check passed');
+
+$invalidStmt = $conn->prepare('CALL update_mission_details(?, ?, ?, ?, ?, ?)');
+if (!$invalidStmt) {
+    fail('Unable to prepare invalid update_mission_details call: ' . $conn->error);
+}
+$invalidDuration = 6;
+$invalidStmt->bind_param('isiiis', $missionId, $start, $invalidDuration, $odoStart, $odoEnd, $status);
+if ($invalidStmt->execute()) {
+    $invalidStmt->close();
+    clearAllResults($conn);
+    fail('update_mission_details accepted invalid duration > 5 days');
+}
+$invalidStmt->close();
+clearAllResults($conn);
+ok('update_mission_details rejects invalid duration > 5 days');
 
 $res = $conn->query('SELECT MAX(mission_id) AS max_id FROM MISSION');
 if (!$res) {
