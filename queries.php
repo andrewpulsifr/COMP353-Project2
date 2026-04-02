@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * queries.php
+ * Purpose: Implements the required SELECT queries (1–9) for the COMP353 project.
+ */
+
+/**
  * Executes one of the original SELECT queries (1-9)
  *
  * @return array{title:string, rows:array<int, array<string, mixed>>, hideColumns:array<int, string>}|false

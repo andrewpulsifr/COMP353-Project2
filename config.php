@@ -1,4 +1,9 @@
 <?php
+/**
+ * config.php
+ * Purpose: Central DB host/schema constants for the COMP353 RENTTRUCK project.
+ */
+
 define('DB_HOST', 'qwc353.encs.concordia.ca');
 define('DB_NAME', 'qwc353_4');
 // Note: In a real application, get the username and password from environment variables

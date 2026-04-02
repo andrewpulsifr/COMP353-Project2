@@ -1,4 +1,10 @@
 <?php
+/**
+ * database.php
+ * Purpose: Shared MySQL connection helper (mysqli) for the web UI.
+ * Notes: Uses DB constants from config.php and credentials stored in $_SESSION.
+ */
+
 require_once __DIR__ . '/config.php';
 
 /**

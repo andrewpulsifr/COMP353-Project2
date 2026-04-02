@@ -1,12 +1,12 @@
 <?php
 
-declare(strict_types=1);
+/**
+ * db_smoke_test.php
+ * Purpose: CLI smoke test to validate schema, seed data, queries, and stored procedures.
+ * Usage: DB_USER=... DB_PASSWORD=... php db_smoke_test.php
+ */
 
-// CLI smoke test for the COMP353 Project DB.
-// Connects with environment variables (no web session required).
-//
-// Usage:
-//   DB_USER=... DB_PASSWORD=... php db_smoke_test.php
+declare(strict_types=1);
 
 mysqli_report(MYSQLI_REPORT_OFF);
 

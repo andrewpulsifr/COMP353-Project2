@@ -1,3 +1,7 @@
+-- setup.sql
+-- Purpose: Re-runnable schema + seed data for the COMP353 RENTTRUCK project.
+-- Notes: Drops and recreates all tables, triggers, and stored procedures.
+
 USE qwc353_4;
 
 -- Re-runnable setup script.

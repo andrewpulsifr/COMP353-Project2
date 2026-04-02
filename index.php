@@ -1,4 +1,9 @@
 <?php
+/**
+ * index.php
+ * Purpose: Main controller/entrypoint for the web UI (login, query execution, transactions).
+ */
+
 session_start();
 date_default_timezone_set('America/Toronto');
 

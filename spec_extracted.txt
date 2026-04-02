@@ -1,5 +1,9 @@
 
 
+spec_extracted.txt
+Purpose: Extracted/plain-text copy of the project specification for quick reference.
+
+
 --- PAGE 1 ---
 1 
  

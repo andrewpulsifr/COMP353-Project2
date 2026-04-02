@@ -1,3 +1,7 @@
+<!--
+main_view.php
+Purpose: View/template for the COMP353 RENTTRUCK web UI (queries, transactions, and table browsing).
+-->
 <!DOCTYPE html>
 <html>
 <head>

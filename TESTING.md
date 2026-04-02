@@ -1,3 +1,8 @@
+<!--
+TESTING.md
+Purpose: Runbook for applying setup.sql and running db_smoke_test.php against the remote MySQL DB.
+-->
+
 # Database Setup + Smoke Test
 
 This repo assumes the remote MySQL host and schema used by the web UI:

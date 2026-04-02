@@ -1,3 +1,8 @@
+/**
+ * script.js
+ * Purpose: Client-side UI helpers for showing/hiding panels and submitting query forms.
+ */
+
 function showPanel(panelId) {
     // If showing results, just show query and results panels without hiding others
     if (panelId === 'resultsPanel') {

@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * transactions.php
+ * Purpose: Implements required transactions (complete mission, cancel mission) for the COMP353 project.
+ */
+
 function executeTransaction(string $transactionType, mysqli $conn) {
     $message = '';
     $detailsTitle = '';
