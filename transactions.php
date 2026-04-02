@@ -66,7 +66,7 @@ function executeTransaction(string $transactionType, mysqli $conn) {
         }
 
         $stmt->close();
-        $message = '✅ Mission ' . $missionId . ' completed successfully!';
+        $message = 'Mission ' . $missionId . ' completed successfully!';
 
         $detailsTitle = 'Updated Mission Details:';
         $verifyResult = $conn->query('SELECT * FROM MISSION WHERE mission_id = ' . $missionId);
@@ -121,7 +121,7 @@ function executeTransaction(string $transactionType, mysqli $conn) {
                 }
             }
 
-            $message = '✅ ' . $resultMessage;
+            $message = $resultMessage;
             $detailsTitle = 'Cancelled Mission Details:';
 
             $verifyResult = $conn->query('SELECT * FROM MISSION WHERE mission_id = ' . $missionId);

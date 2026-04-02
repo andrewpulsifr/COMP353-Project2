@@ -10,16 +10,16 @@ Purpose: View/template for the COMP353 RENTTRUCK web UI (queries, transactions, 
 </head>
 <body>
 
-<h1>🚚 RENTRUCK Database Management System</h1>
+<h1>RENTRUCK Database Management System</h1>
 
 <div class="button-group">
     <?php if ($isLoggedIn): ?>
-        <button onclick="showPanel('queryPanel')">📊 Run Queries</button>
-        <button onclick="showPanel('transactionPanel')">💾 Execute Transactions</button>
-        <button onclick="showPanel('dbContent')">👁️ View All Tables</button>
+        <button onclick="showPanel('queryPanel')">Run Queries</button>
+        <button onclick="showPanel('transactionPanel')">Execute Transactions</button>
+        <button onclick="showPanel('dbContent')">View All Tables</button>
         <button class="hide-btn" onclick="hideAll()">Hide All</button>
         <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>?logout=1" style="text-decoration: none;">
-            <button class="hide-btn">🚪 Logout</button>
+            <button class="hide-btn">Logout</button>
         </a>
     <?php endif; ?>
 </div>
@@ -46,19 +46,19 @@ Purpose: View/template for the COMP353 RENTTRUCK web UI (queries, transactions, 
     <p style="margin: 10px 0; color: #666;">Logged in as: <strong><?php echo htmlspecialchars($_SESSION['db_user']); ?></strong></p>
 
     <div id="queryPanel">
-        <h2>📊 Query Execution</h2>
+        <h2>Query Execution</h2>
 
         <div class="section-title">SELECT Queries (1-9)</div>
         <div class="query-buttons-row">
-            <button class="query-btn" type="button" onclick="executeQuery('1')">1️⃣ Business Customers</button>
-            <button class="query-btn" type="button" onclick="executeQuery('2')">2️⃣ Reservations &gt; 1</button>
-            <button class="query-btn" type="button" onclick="executeQuery('3')">3️⃣ Active Drivers/Vehicles</button>
-            <button class="query-btn" type="button" onclick="executeQuery('4')">4️⃣ Weekly Missions</button>
-            <button class="query-btn" type="button" onclick="executeQuery('5')">5️⃣ Unpaid Invoices</button>
-            <button class="query-btn" type="button" onclick="executeQuery('6')">6️⃣ GMC Vehicle Drivers</button>
-            <button class="query-btn" type="button" onclick="executeQuery('7')">7️⃣ High-Value Invoices</button>
-            <button class="query-btn" type="button" onclick="executeQuery('8')">8️⃣ Customer Summary</button>
-            <button class="query-btn" type="button" onclick="executeQuery('9')">9️⃣ High-Mileage Drivers</button>
+            <button class="query-btn" type="button" onclick="executeQuery('1')">1. Business Customers</button>
+            <button class="query-btn" type="button" onclick="executeQuery('2')">2. Reservations &gt; 1</button>
+            <button class="query-btn" type="button" onclick="executeQuery('3')">3. Active Drivers/Vehicles</button>
+            <button class="query-btn" type="button" onclick="executeQuery('4')">4. Weekly Missions</button>
+            <button class="query-btn" type="button" onclick="executeQuery('5')">5. Unpaid Invoices</button>
+            <button class="query-btn" type="button" onclick="executeQuery('6')">6. GMC Vehicle Drivers</button>
+            <button class="query-btn" type="button" onclick="executeQuery('7')">7. High-Value Invoices</button>
+            <button class="query-btn" type="button" onclick="executeQuery('8')">8. Customer Summary</button>
+            <button class="query-btn" type="button" onclick="executeQuery('9')">9. High-Mileage Drivers</button>
         </div>
 
         <?php $q3Group = $_POST['query3_group_by'] ?? 'none'; ?>
@@ -93,7 +93,7 @@ Purpose: View/template for the COMP353 RENTTRUCK web UI (queries, transactions, 
     </div>
 
     <div id="transactionPanel">
-        <h2>💾 Transaction Execution</h2>
+        <h2>Transaction Execution</h2>
 
         <div class="section-title">Transaction 10: Complete Mission</div>
         <form method="POST">
@@ -125,7 +125,7 @@ Purpose: View/template for the COMP353 RENTTRUCK web UI (queries, transactions, 
                 <input type="number" id="update_odometer_end" name="odometer_end" min="0" required>
             </div>
 
-            <button type="submit" class="transaction-btn">✅ Complete Mission</button>
+            <button type="submit" class="transaction-btn">Complete Mission</button>
         </form>
 
         <div class="section-title" style="margin-top: 40px;">Transaction 11: Cancel Mission</div>
@@ -143,7 +143,7 @@ Purpose: View/template for the COMP353 RENTTRUCK web UI (queries, transactions, 
                 <textarea id="cancel_reason" name="cancellation_reason" required placeholder="Enter the reason for cancellation..."></textarea>
             </div>
 
-            <button type="submit" class="transaction-btn">❌ Cancel Mission</button>
+            <button type="submit" class="transaction-btn">Cancel Mission</button>
         </form>
     </div>
 
