@@ -150,7 +150,7 @@ DELIMITER //
 CREATE PROCEDURE update_mission_details(
     IN p_mission_id INT,
     IN p_start_datetime DATETIME,
-   IN p_mission_duration INT,
+    IN p_mission_duration FLOAT,
     IN p_odometer_start INT,
     IN p_odometer_end INT,
     IN p_status CHAR(1)
@@ -166,7 +166,7 @@ BEGIN
       SET MESSAGE_TEXT = 'Start datetime is required';
    END IF;
 
-   IF p_mission_duration IS NULL OR p_mission_duration < 1 OR p_mission_duration > 5 THEN
+   IF p_mission_duration IS NULL OR p_mission_duration <= 0 OR p_mission_duration > 5 THEN
       SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'Mission duration must be > 0 and <= 5 days';
    END IF;
