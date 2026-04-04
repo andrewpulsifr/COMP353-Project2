@@ -33,7 +33,6 @@ function executeQuery(string $queryType, mysqli $conn) {
                 . "     WHEN res_status = 'C' THEN 'Completed'\n"
                 . "     WHEN res_status = 'X' THEN 'Cancelled'\n"
                 . "END as res_status,\n"
-                . "requested_vehicle_type, expected_duration, appointment_datetime\n"
                 . "requested_vehicle_type, expected_duration, appointment_datetime,\n"
                 . "DATE_ADD(appointment_datetime, INTERVAL expected_duration DAY) AS expected_end_datetime\n"
                 . "FROM RESERVATION WHERE res_id > 1 ORDER BY res_id";
