@@ -75,8 +75,8 @@ function executeCompleteMissionTransaction(mysqli $conn): array {
         ];
     }
 
-    // (mission_id INT, start_datetime DATETIME, mission_duration_days INT, odometer_start INT, odometer_end INT, status CHAR(1))
-    $stmt->bind_param('isiiis', $missionId, $actualStart, $durationDays, $odometerStart, $odometerEnd, $missionStatus);
+    // (mission_id INT, start_datetime DATETIME, mission_duration_days FLOAT, odometer_start INT, odometer_end INT, status CHAR(1))
+    $stmt->bind_param('isdiis', $missionId, $actualStart, $durationDays, $odometerStart, $odometerEnd, $missionStatus);
 
     if (!$stmt->execute()) {
         $err = $stmt->error;
