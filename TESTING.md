@@ -68,7 +68,3 @@ DB_HOST=qwc353.encs.concordia.ca DB_NAME=qwc353_4 DB_USER=... DB_PASSWORD=... ph
 2. Login with your ENCS DB credentials.
 3. Run Queries 1–9.
 4. Run Transactions 10 and 11.
-
-## Notes
-
-- If report defines stored procedure behavior differently, update `setup.sql` to match that spec. It currently implements the simplest behavior that matches the web UI.
