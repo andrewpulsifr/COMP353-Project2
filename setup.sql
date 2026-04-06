@@ -107,12 +107,10 @@ CREATE TABLE MISSION (
 CREATE TABLE INVOICE_LINE (
    invoice_id INT NOT NULL,
    mission_id INT NOT NULL,
-   duration FLOAT NOT NULL,
    rental_cost FLOAT NOT NULL,
    PRIMARY KEY (invoice_id, mission_id),
    FOREIGN KEY (invoice_id) REFERENCES INVOICE(invoice_id) ON DELETE CASCADE ON UPDATE CASCADE,
    FOREIGN KEY (mission_id) REFERENCES MISSION(mission_id) ON DELETE CASCADE ON UPDATE CASCADE,
-   CONSTRAINT chk_duration CHECK (duration > 0),
    CONSTRAINT chk_rental_cost CHECK (rental_cost >= 0)
 ) ENGINE=InnoDB;
 
@@ -307,17 +305,17 @@ INSERT INTO INVOICE (invoice_id, client_id, invoice_date) VALUES
 (10, 10, '2026-03-12');
 
 -- Invoice lines (ensure some invoices sum > 1000 for Query 7)
-INSERT INTO INVOICE_LINE (invoice_id, mission_id, duration, rental_cost) VALUES
-(1, 2, 3.0, 1200.00),
-(1, 3, 2.0, 450.00),
-(2, 4, 4.0, 2200.00),
-(3, 5, 2.0, 1050.00),
-(4, 10, 1.0, 350.00),
-(5, 9, 3.0, 1750.00),
-(6, 6, 3.0, 450.00),
-(7, 7, 4.0, 2200.00),
-(8, 8, 2.0, 300.00),
-(9, 1, 2.0, 300.00);
+INSERT INTO INVOICE_LINE (invoice_id, mission_id, rental_cost) VALUES
+(1, 2, 1200.00),
+(1, 3, 450.00),
+(2, 4, 2200.00),
+(3, 5, 1050.00),
+(4, 10, 350.00),
+(5, 9, 1750.00),
+(6, 6, 450.00),
+(7, 7, 2200.00),
+(8, 8, 300.00),
+(9, 1, 300.00);
 
 -- Payments (some pending for Query 5)
 INSERT INTO PAYMENT (payment_id, invoice_id, method, pay_status, amount, pay_date) VALUES
@@ -331,3 +329,73 @@ INSERT INTO PAYMENT (payment_id, invoice_id, method, pay_status, amount, pay_dat
 (8, 8, 'Credit Card', 'C', 300.00, '2026-03-12'),
 (9, 9, 'Credit Card', 'C', 300.00, '2026-03-12'),
 (10, 10, 'Cash', 'C', 0.00, '2026-03-12');
+
+-- =====================================================
+-- EXTRA DEMO / BUFFER DATA
+-- Purpose:
+-- 1) Keep counts above minimum after update/delete demos
+-- 2) Add rows that do NOT match some query filters, so results stand out
+-- =====================================================
+
+-- Extra clients
+INSERT INTO CLIENT (client_id, client_name, client_addr, client_phone, client_type) VALUES
+(11, 'Northline Cargo', '852 Harbor St', '4380000011', 'Business'),
+(12, 'Olivia Moore', '159 Cedar Ave', '4380000012', 'Individual'),
+(13, 'Prairie Freight', '963 Route 7', '8190000013', 'Business');
+
+-- Extra drivers
+INSERT INTO DRIVER (driver_id, driver_licence_type, driver_first_name, driver_last_name) VALUES
+(11, 'H', 'Kevin', 'Roy'),
+(12, 'T', 'Laura', 'Mills'),
+(13, 'S', 'Noah', 'Singh');
+
+-- Extra vehicles
+INSERT INTO VEHICLE (vehicle_id, vehicle_type, vehicle_brand) VALUES
+(13, 'Tourism', 'Hyundai'),
+(14, 'Heavyweight', 'Kenworth'),
+(15, 'SuperHeavyweight', 'Freightliner');
+
+-- Extra reservations:
+-- some inside the general project timeline, some outside Mar 11-18 so Query 4 visibly filters them out
+INSERT INTO RESERVATION (res_id, client_id, reservation_date, res_status, requested_vehicle_type, expected_duration, rendezvous_location, appointment_datetime) VALUES
+(11, 11, '2026-01-25', 'P', 'Heavyweight', 2, 'Harbor', '2026-03-20 08:00:00'),
+(12, 12, '2026-01-28', 'C', 'Tourism', 1, 'Museum', '2026-02-20 11:00:00'),
+(13, 13, '2026-02-02', 'P', 'SuperHeavyweight', 5, 'Refinery', '2026-03-25 06:30:00'),
+(14, 3, '2026-02-07', 'X', 'Tourism', 2, 'Stadium', '2026-03-22 14:00:00'),
+(15, 7, '2026-02-10', 'P', 'Tourism', 1, 'Airport', '2026-03-31 09:00:00');
+
+-- Extra missions:
+-- outside Mar 11-18 for Query 4 filtering,
+-- one low-mileage completed mission so Query 9 excludes it,
+-- one >7000 km completed mission so Query 9 still clearly works even after deleting another qualifying row
+INSERT INTO MISSION (
+  mission_id, res_id, driver_id, vehicle_id, rendezvous_location, appointment_datetime,
+  duration, actual_start_datetime, actual_end_datetime, odometer_start, odometer_end, mission_status
+) VALUES
+(11, 11, 11, 14, 'Harbor', '2026-03-20 08:00:00', 2, '2026-03-20 08:10:00', '2026-03-22 08:10:00', 30000, 30420, 'C'),
+(12, 12, 12, 13, 'Museum', '2026-02-20 11:00:00', 1, '2026-02-20 11:05:00', '2026-02-21 11:05:00', 41000, 41110, 'C'),
+(13, 13, 13, 15, 'Refinery', '2026-03-25 06:30:00', 5, NULL, NULL, NULL, NULL, 'S'),
+(14, 15, 1, 8, 'Airport', '2026-03-31 09:00:00', 1, '2026-03-31 09:15:00', '2026-04-01 09:15:00', 150000, 158200, 'C');
+
+-- Extra invoices
+INSERT INTO INVOICE (invoice_id, client_id, invoice_date) VALUES
+(11, 11, '2026-03-22'),
+(12, 12, '2026-02-21'),
+(13, 13, '2026-03-26'),
+(14, 7, '2026-04-01');
+
+-- Extra invoice lines
+-- includes one invoice total under 1000 and one well over 1000 for Query 7 contrast
+INSERT INTO INVOICE_LINE (invoice_id, mission_id, rental_cost) VALUES
+(11, 11, 900.00),
+(12, 12, 200.00),
+(13, 13, 3200.00),
+(14, 14, 2400.00);
+
+-- Extra payments
+-- mix of completed and pending so Query 5 still has contrast after demos
+INSERT INTO PAYMENT (payment_id, invoice_id, method, pay_status, amount, pay_date) VALUES
+(11, 11, 'Cash', 'C', 900.00, '2026-03-22'),
+(12, 12, 'Credit Card', 'C', 200.00, '2026-02-21'),
+(13, 13, 'Check', 'P', 3200.00, NULL),
+(14, 14, 'Credit Card', 'C', 2400.00, '2026-04-01');
