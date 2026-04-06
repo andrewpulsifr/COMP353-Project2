@@ -160,8 +160,8 @@ function executeQuery(string $queryType, mysqli $conn) {
             break;
 
         case '8':
-            $query = "SELECT c.client_id, c.client_name, c.client_addr, c.client_phone, c.client_type,\n"
-                . "COUNT(i.invoice_id) as invoice_count, CONCAT('$',\n"
+           $query = "SELECT c.client_id, c.client_name, c.client_addr, c.client_phone, c.client_type,\n"
+                . "COUNT(DISTINCT i.invoice_id) as invoice_count, CONCAT('$',\n"
                 . "FORMAT(COALESCE(SUM(il.rental_cost), 0), 2)) as total_rental_cost\n"
                 . "FROM CLIENT c LEFT JOIN INVOICE i ON c.client_id = i.client_id\n"
                 . "LEFT JOIN INVOICE_LINE il ON i.invoice_id = il.invoice_id\n"

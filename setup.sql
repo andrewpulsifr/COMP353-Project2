@@ -399,3 +399,51 @@ INSERT INTO PAYMENT (payment_id, invoice_id, method, pay_status, amount, pay_dat
 (12, 12, 'Credit Card', 'C', 200.00, '2026-02-21'),
 (13, 13, 'Check', 'P', 3200.00, NULL),
 (14, 14, 'Credit Card', 'C', 2400.00, '2026-04-01');
+
+-- ADDITIONAL DEMO / FILTERING DATA
+-- Purpose:
+-- 1) Show Query 8 LEFT JOIN behavior with a client who has 0 invoices
+-- 2) Show Query 5 filters on payment status, not invoice amount
+-- 3) Add a third high-mileage driver for Query 9
+-- 4) Add a mission just outside Query 4's lower bound for boundary demo
+
+-- 1) Client with zero invoices
+-- Appears in Query 8 with invoice_count = 0 and total_rental_cost = $0.00
+INSERT INTO CLIENT (client_id, client_name, client_addr, client_phone, client_type) VALUES
+(14, 'Metro Haulage', '777 Rail Ave', '4380000014', 'Business');
+
+-- 2) Small unpaid invoice (< $1000)
+-- Helps show Query 5 filters by pay_status, not by amount
+-- Reuses existing client 11 and mission 11
+INSERT INTO INVOICE (invoice_id, client_id, invoice_date) VALUES
+(15, 11, '2026-03-30');
+
+INSERT INTO INVOICE_LINE (invoice_id, mission_id, rental_cost) VALUES
+(15, 11, 250.00);
+
+INSERT INTO PAYMENT (payment_id, invoice_id, method, pay_status, amount, pay_date) VALUES
+(15, 15, 'Check', 'P', 250.00, NULL);
+
+-- 3) Additional high-mileage mission
+-- Adds a third qualifying row to Query 9
+-- Driver 4 (David Wong) will now also satisfy >7000 km
+INSERT INTO RESERVATION (res_id, client_id, reservation_date, res_status, requested_vehicle_type, expected_duration, rendezvous_location, appointment_datetime) VALUES
+(16, 8, '2026-02-14', 'P', 'SuperHeavyweight', 2, 'Port', '2026-03-29 06:00:00');
+
+INSERT INTO MISSION (
+  mission_id, res_id, driver_id, vehicle_id, rendezvous_location, appointment_datetime,
+  duration, actual_start_datetime, actual_end_datetime, odometer_start, odometer_end, mission_status
+) VALUES
+(15, 16, 4, 6, 'Port', '2026-03-29 06:00:00', 2, '2026-03-29 06:10:00', '2026-03-31 06:10:00', 50000, 57550, 'C');
+
+-- 4) Mission just before Query 4 lower bound
+-- Exists in the database but should NOT appear in Query 4
+-- because Query 4 starts on 2026-03-11
+INSERT INTO RESERVATION (res_id, client_id, reservation_date, res_status, requested_vehicle_type, expected_duration, rendezvous_location, appointment_datetime) VALUES
+(17, 2, '2026-02-15', 'P', 'Tourism', 1, 'Terminal', '2026-03-10 08:00:00');
+
+INSERT INTO MISSION (
+  mission_id, res_id, driver_id, vehicle_id, rendezvous_location, appointment_datetime,
+  duration, actual_start_datetime, actual_end_datetime, odometer_start, odometer_end, mission_status
+) VALUES
+(16, 17, 2, 2, 'Terminal', '2026-03-10 08:00:00', 1, '2026-03-10 08:05:00', '2026-03-11 08:05:00', 61000, 61120, 'C');
